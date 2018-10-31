@@ -61,6 +61,9 @@ parser.add_argument(
     help='The path to the directory where the client configuration files are '
     'located. Overiddes the value from DOCKER_CONFIG')
 
+parser.add_argument(
+  '--cache', action='store', help='Image\'s files cache directory.')
+
 _THREADS = 8
 
 
@@ -115,13 +118,13 @@ def main():
     logging.info('Pulling v2.2 image from %r ...', name)
     with v2_2_image.FromRegistry(name, creds, transport, accept) as v2_2_img:
       if v2_2_img.exists():
-        save.fast(v2_2_img, args.directory, threads=_THREADS)
+        save.fast(v2_2_img, args.directory, args.cache, threads=_THREADS)
         return
 
     logging.info('Pulling v2 image from %r ...', name)
     with v2_image.FromRegistry(name, creds, transport) as v2_img:
       with v2_compat.V22FromV2(v2_img) as v2_2_img:
-        save.fast(v2_2_img, args.directory, threads=_THREADS)
+        save.fast(v2_2_img, args.directory, args.cache, threads=_THREADS)
         return
   # pylint: disable=broad-except
   except Exception as e:
