@@ -21,6 +21,7 @@ from __future__ import print_function
 import io
 import json
 import os
+import errno
 import tarfile
 
 import concurrent.futures
@@ -179,13 +180,18 @@ def fast(image, directory,
     write_file(cached_layer, accessor, arg)
     link(cached_layer, name)
 
-  def link(source, link):
+  def link(source, dest):
     # unlink first to remove "old" layers if needed, e.g., image A latest has layers 1, 2 and 3
     # after a while it has layers 1, 2 and 3'. Since in both cases the layers are named 001, 002 and 003
     # Unlinking promises the correct layers are linked in the image directory
-    if os.path.exists(link):
-      os.unlink(link)
-    os.link(source, link)
+    try:
+      os.symlink(source, dest)
+    except OSError as e:
+      if e.errno == errno.EEXIST:
+        os.unlink(dest)
+        os.symlink(source, dest)
+      else:
+        raise e
 
   def valid(cached_layer, digest):
     with io.open(cached_layer, u'rb') as f:
